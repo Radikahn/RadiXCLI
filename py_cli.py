@@ -1,13 +1,7 @@
 from __future__ import annotations
 
-
 import typing
-
-
 import urwid
-
-
-
 
 
 if typing.TYPE_CHECKING:
