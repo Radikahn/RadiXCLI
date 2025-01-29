@@ -1,170 +1,202 @@
 from __future__ import annotations
 
+
 import typing
+
+
 import urwid
 
 
 if typing.TYPE_CHECKING:
 
-    from collections.abc import Iterable
+    from collections.abc import Callable, Hashable, Iterable
 
 
-#Core List For Program Menus
-choices = "Profile Notes Settings".split()
-curr_screen = 0
 
-#Attr Maps for stylizing
-large_font = urwid.AttrMap('large_font', 'default', {'font': ('default', 20)})
+def menu_button(
 
+    caption: str | tuple[Hashable, str] | list[str | tuple[Hashable, str]],
 
-palette = [
+    callback: Callable[[urwid.Button], typing.Any],
 
-    ("reversed", "standout", "")
+) -> urwid.AttrMap:
 
+    button = urwid.Button(caption, on_press=callback)
 
-]
-
-#Main Menu Config
-def menu(title: str, choices_: Iterable[str]) -> urwid.ListBox:
-
-    body = [urwid.Text(title), urwid.Divider()]
+    return urwid.AttrMap(button, None, focus_map="reversed")
 
 
-    for c in choices_:
 
-        button = urwid.Button(c)
+def sub_menu(
 
-        urwid.connect_signal(button, "click", add_screen, c)
+    caption: str | tuple[Hashable, str] | list[str | tuple[Hashable, str]],
 
-        body.append(urwid.AttrMap(button, None, focus_map="reversed"))
+    choices: Iterable[urwid.Widget],
 
+) -> urwid.Widget:
 
-    return urwid.ListBox(urwid.SimpleFocusListWalker(body))
-
-
-#Sub Menu Config
-def item_chosen(choice: str) -> urwid.ListBox:
-        
-    body = [urwid.Text([choice, "\n"]), urwid.Divider()]
+    contents = menu(caption, choices)
 
 
-    #Menu Traversal
+    def open_menu(button: urwid.Button) -> None:
 
-    # done = urwid.Button("Ok")
-
-    # back = urwid.Button("Back")
+        return top.open_box(contents)
 
 
-    # urwid.connect_signal(done, "click", exit_program)
+    return menu_button([caption, "..."], open_menu)
 
 
-    # urwid.connect_signal(back, "click", back_screen)
 
-    # #Add Items to body (display list)
-    # body.append(urwid.AttrMap(done, None, focus_map="reversed"))
-                
-    # body.append(urwid.AttrMap(back, None, focus_map="reversed"))
+def menu(
+
+    title: str | tuple[Hashable, str] | list[str | tuple[Hashable, str]],
+
+    choices: Iterable[urwid.Widget],
+
+) -> urwid.ListBox:
+
+    body = [urwid.Text(title), urwid.Divider(), *choices]
 
     return urwid.ListBox(urwid.SimpleFocusListWalker(body))
 
 
-def add_screen(choice: str, wildcard) -> None:
 
-    global curr_screen
-    screen_builder = urwid.Padding(item_chosen(choice), left=2, right=2)
+def item_chosen(button: urwid.Button) -> None:
 
-    on_screen = urwid.Overlay(
+    response = urwid.Text(["You chose ", button.label, "\n"])
 
-        screen_builder,
+    done = menu_button("Ok", exit_program)
 
-        urwid.SolidFill("\N{MEDIUM SHADE}"),
+    top.open_box(urwid.Filler(urwid.Pile([response, done])))
 
-        align=urwid.CENTER,
 
-        width=(urwid.RELATIVE, 60),
 
-        valign=urwid.MIDDLE,
-
-        height=(urwid.RELATIVE, 60),
-
-        min_width=20,
-
-        min_height=9,
-
-    )
-
-    screen.append(on_screen)
-    curr_screen += 1
-
-def back_screen() -> None:
-    curr_screen -= 1
-
-#Default Actions
-def exit_program(button: urwid.Button) -> None:
+def exit_program(button: urwid.Button) -> typing.NoReturn:
 
     raise urwid.ExitMainLoop()
 
-def exit_on_press(key: str) -> None:
-    
-    if key in {"q", "Q"}:
-        raise urwid.ExitMainLoop()
 
 
+menu_top = menu(
 
+    "RADIX",
 
+    [
 
+        sub_menu(
 
-#Main Functions
+            "Notes",
 
+            [
 
-main = urwid.Padding(menu("RADIX", choices), left=2, right=2)
+                sub_menu(
 
+                    "Accessories",
+                    
+                    [menu_button("Text Editor", item_chosen), menu_button("Terminal", item_chosen),],
+                    
+                ),
 
+                sub_menu(
+                
+                    "Test1", 
+                
+                    [menu_button("test2", item_chosen)]
+                
+                )
 
-top = urwid.Overlay(
+            ],
 
-    main,
+        ),
 
-    urwid.SolidFill("\N{MEDIUM SHADE}"),
+        sub_menu(
 
-    align=urwid.CENTER,
+            "Settings",
 
-    width=(urwid.RELATIVE, 60),
+            [
 
-    valign=urwid.MIDDLE,
+                sub_menu(
 
-    height=(urwid.RELATIVE, 60),
+                    "Preferences",
 
-    min_width=20,
+                    [menu_button("Appearance", item_chosen)],
 
-    min_height=9,
+                ),
+
+                menu_button("Lock Screen", item_chosen),
+
+            ],
+
+        ),
+
+    ],
 
 )
 
-screen = [top]
 
-temp = urwid.Padding(item_chosen("Test"), left=2, right=2),
 
-test = urwid.Overlay(
-    
-    temp,
+class CascadingBoxes(urwid.WidgetPlaceholder):
 
-    urwid.SolidFill("\N{MEDIUM SHADE}"),
+    max_box_levels = 4
 
-    align=urwid.CENTER,
 
-    width=(urwid.RELATIVE, 60),
+    def __init__(self, box: urwid.Widget) -> None:
 
-    valign=urwid.MIDDLE,
+        super().__init__(urwid.SolidFill("/"))
 
-    height=(urwid.RELATIVE, 60),
+        self.box_level = 0
 
-    min_width=20,
+        self.open_box(box)
 
-    min_height=9,
-)
 
-screen.append(test)
+    def open_box(self, box: urwid.Widget) -> None:
 
-curr_screen = 1
-urwid.MainLoop(screen[curr_screen], palette=palette, unhandled_input=exit_on_press).run()
+        self.original_widget = urwid.Overlay(
+
+            urwid.LineBox(box),
+
+            self.original_widget,
+
+            align=urwid.CENTER,
+
+            width=(urwid.RELATIVE, 80),
+
+            valign=urwid.MIDDLE,
+
+            height=(urwid.RELATIVE, 80),
+
+            min_width=24,
+
+            min_height=8,
+
+            left=self.box_level * 3,
+
+            right=(self.max_box_levels - self.box_level - 1) * 3,
+
+            top=self.box_level * 2,
+
+            bottom=(self.max_box_levels - self.box_level - 1) * 2,
+
+        )
+
+        self.box_level += 1
+
+
+    def keypress(self, size, key: str) -> str | None:
+
+        if key == "esc" and self.box_level > 1:
+
+            self.original_widget = self.original_widget[0]
+
+            self.box_level -= 1
+
+            return None
+
+
+        return super().keypress(size, key)
+
+
+
+top = CascadingBoxes(menu_top)
+
+urwid.MainLoop(top, palette=[("reversed", "standout", "")]).run()
