@@ -24,8 +24,6 @@ palette = [
 
 ]
 
-
-
 #Main Menu Config
 def menu(title: str, choices_: Iterable[str]) -> urwid.ListBox:
 
