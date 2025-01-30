@@ -199,13 +199,15 @@ class CascadingBoxes(urwid.WidgetPlaceholder):
 
         if key == "q" or key == "Q":
             
-            exit_program
+            CascadingBoxes.exit_program()
 
 
 
         return super().keypress(size, key)
 
 
+    def exit_program():
+        raise urwid.ExitMainLoop()
 
 top = CascadingBoxes(menu_top)
 

@@ -1,10 +1,16 @@
 from __future__ import print_function, absolute_import, division
 import urwid
+import py_cli
+import subprocess
+import pip
 
+pip.main(['install', 'keyboard'])
+import keyboard
 
 def show_or_exit(key):
-    if key in ('q', 'Q', 'esc'):
-        raise urwid.ExitMainLoop()
+    if keyboard.read_key == "esc":
+        subprocess.run("python", "py_cli.py")
+    
 
 def name_changed(w, x):
     header.set_text('Hello % s!' % x)
