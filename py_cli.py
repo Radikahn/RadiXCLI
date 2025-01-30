@@ -2,8 +2,6 @@ from __future__ import annotations
 
 
 import typing
-
-
 import urwid
 
 
@@ -11,6 +9,12 @@ if typing.TYPE_CHECKING:
 
     from collections.abc import Callable, Hashable, Iterable
 
+
+palette = [
+    
+    ("reversed", "standout", "")
+
+]
 
 
 def menu_button(
@@ -193,10 +197,16 @@ class CascadingBoxes(urwid.WidgetPlaceholder):
             return None
 
 
+        if key == "q" or key == "Q":
+            
+            exit_program
+
+
+
         return super().keypress(size, key)
 
 
 
 top = CascadingBoxes(menu_top)
 
-urwid.MainLoop(top, palette=[("reversed", "standout", "")]).run()
+urwid.MainLoop(top, palette=palette).run()
